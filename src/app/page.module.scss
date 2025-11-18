@@ -1,42 +1,42 @@
+.container {
+	margin: 0 auto;
+	padding: 2rem;
+	width: 100vw;
+	height: 100vh;
+	overflow: hidden;
+	position: relative;
+}
+
 .gradient {
 	position: fixed;
 	top: 0;
 	left: 0;
-
 	width: 100%;
 	height: 100%;
-
-	z-index: -1;
-}
-
-.container {
-	margin: 0 auto;
-	padding: 2rem;
+	z-index: -2;
+	opacity: 1;
 }
 
 .cookieWelcome {
 	position: absolute;
-
-	// top: 50%;
-	// left: 50%;
-	// transform: translateX(-50%) translateY(-50%);
-
+	top: 0;
+	left: 0;
 	width: 100vw;
 	height: 100vh;
-
-	// backdrop-filter: blur(24px);
-
 	color: var(--text-color);
-
 	display: flex;
 	justify-content: center;
 	align-items: center;
+	backdrop-filter: blur(5px);
+	z-index: 10;
 }
 
 .title {
 	font-size: 2.5rem;
 	color: var(--text-color);
 	text-align: center;
+	position: relative;
+	z-index: 5;
 }
 
 .buttonContainer {
@@ -44,16 +44,15 @@
 	justify-content: center;
 	gap: 2rem;
 	margin-top: 2rem;
-
 	color: var(--text-color);
-	// background: blue;
+	position: relative;
+	z-index: 5;
 
 	.button {
 		padding: 0.5rem 1.5rem;
 		font-size: 1.25rem;
 		border: none;
 		border-radius: 0.5rem;
-
-		// background: red;
+		cursor: pointer;
 	}
 }
