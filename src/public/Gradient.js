@@ -524,6 +524,8 @@ class Gradient {
 			e(this, "scrollObserver", void 0),
 			e(this, "amp", 320),
 			e(this, "seed", 5),
+			e(this, "speed", 1),
+			e(this, "targetSpeed", 1),
 			// e(this, "seed", 14e-5),
 			e(this, "freqX", 14e-5),
 			e(this, "freqY", 29e-5),
@@ -567,8 +569,10 @@ class Gradient {
 			}),
 			e(this, "animate", (e) => {
 				if (!this.shouldSkipFrame(e) || this.isMouseDown) {
+					this.speed += (this.targetSpeed - this.speed) * 0.01;
+
 					if (
-						((this.t += Math.min(e - this.last, 1e3 / 15)),
+						((this.t += Math.min(e - this.last, 1e3 / 15) * this.speed),
 						(this.last = e),
 						this.isMouseDown)
 					) {
