@@ -8,8 +8,8 @@ import styles from "./Matrix.module.scss";
 
 const DOT_SPACING = 8;
 
-const MIN_SIZE = 0.5;
-const MAX_SIZE = 2.5;
+const MIN_SIZE = 0.75;
+const MAX_SIZE = 3;
 
 const CORNER_RADIUS = 1;
 
@@ -62,7 +62,7 @@ export default function Matrix({ ripplesRef }: MatrixProps) {
 			ripplesRef.current = ripplesRef.current.filter((r) => r.alpha > 0);
 
 			if (ripplesRef.current.length > 0) {
-				ctx.fillStyle = "white";
+				ctx.fillStyle = "black";
 
 				for (let x = 0; x < w; x += DOT_SPACING) {
 					for (let y = 0; y < h; y += DOT_SPACING) {
