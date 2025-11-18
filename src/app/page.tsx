@@ -1,6 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+
+import Image from "next/image";
+
 import { motion, AnimatePresence } from "motion/react";
 
 import { Gradient } from "@/components/Gradient";
@@ -11,6 +14,7 @@ import styles from "./page.module.scss";
 
 export default function Home() {
 	const [cookieEntered, setCookieEntered] = useState<boolean>(false);
+	const [cookiesClicked, setCookiesClicked] = useState<number>(0);
 	const gradientRef = useRef<Gradient | null>(null);
 
 	const ripplesRef = useRef<Ripple[]>([]);
@@ -88,20 +92,24 @@ export default function Home() {
 					<motion.div
 						key="cookie-main"
 						className={styles.cookieMain}
-						initial={{ opacity: 0, scale: 0.9, filter: "blur(12px)" }}
-						animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+						initial={{
+							opacity: 0,
+							transform: "scale(0.9)",
+							filter: "blur(12px)",
+						}}
+						animate={{ opacity: 1, transform: "scale(1)", filter: "blur(0px)" }}
 						transition={{
 							type: "spring",
 							stiffness: 100,
 							damping: 20,
 							delay: 0.2,
+							opacity: { duration: 0.4, delay: 0.2 },
 						}}
 					>
-						<h1 className={styles.title}>Cookie Clicker</h1>
-
-						<div className={styles.buttonContainer}>
-							<button className={styles.button}>Play</button>
-							<button className={styles.button}>Play</button>
+						<div className={styles.title}>Cookie Clicker</div>
+						<div className={styles.cookies}>
+							<h1>{cookiesClicked}</h1>
+							<Image src="/cookie.png" alt="Cookie" width={128} height={128} />
 						</div>
 					</motion.div>
 				)}

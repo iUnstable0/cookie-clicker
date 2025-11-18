@@ -55,28 +55,35 @@
 	}
 }
 
-.title {
-	font-size: 2.5rem;
-	color: var(--text-color);
-	text-align: center;
-	position: relative;
-	z-index: 5;
-}
+.cookieMain {
+	.title {
+		position: absolute;
 
-.buttonContainer {
-	display: flex;
-	justify-content: center;
-	gap: 2rem;
-	margin-top: 2rem;
-	color: var(--text-color);
-	position: relative;
-	z-index: 5;
+		padding: 6px 12px;
 
-	.button {
-		padding: 0.5rem 1.5rem;
-		font-size: 1.25rem;
-		border: none;
-		border-radius: 0.5rem;
-		cursor: pointer;
+		border-radius: 10px;
+
+		font-family: "Ubuntu", sans-serif;
+		font-weight: 500;
+
+		background: #ffe5dd;
+		box-shadow: 0 1px 10px rgba(0, 0, 0, 0.5);
+		backdrop-filter: blur(24px);
+	}
+
+	.cookies {
+		position: absolute;
+		top: 0;
+		right: 0;
+
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+
+		font-size: 64px;
+		font-family: "Ubuntu", sans-serif;
+		font-weight: 500;
+
+		color: rgb(45, 45, 45);
 	}
 }
