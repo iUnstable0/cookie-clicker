@@ -1,5 +1,11 @@
 ## Cookie clicker
 
+Try the live demo!
+
+https://cookie.iunstable0.com
+
+or run locally:
+
 Run the development server:
 
 ```bash
