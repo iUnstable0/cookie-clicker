@@ -63,6 +63,7 @@ export default function Home() {
 	const requestRef = useRef<number>(0);
 	const gameCanvasRef = useRef<HTMLCanvasElement | null>(null);
 	const ripplesRef = useRef<Ripple[]>([]);
+	const cookiesClickedRef = useRef(cookiesClicked);
 
 	const [cookieRate, setCookieRate] = React.useState(2);
 
@@ -87,6 +88,16 @@ export default function Home() {
 		interrupt: true,
 		playbackRate: isHaunted ? 0.7 : 1,
 	});
+
+	const getMatrixColor = (cookiesClicked: number) => {
+		if (cookiesClicked >= 67) {
+			return "#ac6407";
+		} else if (cookiesClicked >= 20) {
+			return "#0f7a21";
+		} else {
+			return "#397fe0";
+		}
+	};
 
 	// const [playLore1, { stop: stopLore1 }] = useSound(
 	// 	"/sounds/goodnightgoatloreaudio_1.mp3",
@@ -177,12 +188,18 @@ export default function Home() {
 	useEffect(() => {
 		if (!gradientRef.current) return;
 
-		if (cookiesClicked == 20) {
+		cookiesClickedRef.current = cookiesClicked;
+
+		if (lives !== 1) {
+			setMatrixColor(getMatrixColor(cookiesClicked));
+		}
+
+		if (cookiesClicked >= 20 && cookiesClicked < 67) {
 			gradientRef.current.updateColor(0, "#a7c492", 2000);
 			gradientRef.current.updateColor(1, "#bdde99", 4000);
 			gradientRef.current.updateColor(2, "#92d47e", 6000);
 			gradientRef.current.updateColor(3, "#cbdba2", 8000);
-		} else if (cookiesClicked == 67) {
+		} else if (cookiesClicked >= 67) {
 			gradientRef.current.updateColor(0, "#ffe5c3", 2000);
 			gradientRef.current.updateColor(1, "#e97552", 4000);
 			gradientRef.current.updateColor(2, "#faffe2", 6000);
@@ -191,6 +208,8 @@ export default function Home() {
 	}, [cookiesClicked]);
 
 	useEffect(() => {
+		let interval;
+
 		if (lives <= 0 && !gameOver) {
 			setGameOver(true);
 
@@ -202,7 +221,32 @@ export default function Home() {
 				playLaugh();
 			}, 750);
 		}
-	}, [lives, gameOver]);
+
+		if (lives == 1) {
+			interval = setInterval(() => {
+				setMatrixColor("#ff0800");
+
+				setTimeout(() => {
+					setMatrixColor(getMatrixColor(cookiesClickedRef.current));
+
+					setTimeout(() => {
+						setMatrixColor("#ff0800");
+
+						setTimeout(() => {
+							setMatrixColor(getMatrixColor(cookiesClickedRef.current));
+						}, 500);
+					}, 500);
+				}, 500);
+			}, 2000);
+		}
+
+		// if (lives == 1) {
+		// 	setMatrixColor("#ff0000");
+		// }
+		return () => {
+			if (interval) clearInterval(interval);
+		};
+	}, [lives, gameOver, playLaugh, stopLofi]);
 
 	const spawnCookie = useCallback((width: number, height: number) => {
 		console.log("spawn cookie called");

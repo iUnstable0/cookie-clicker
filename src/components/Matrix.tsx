@@ -4,14 +4,19 @@ import { useEffect, useRef, useState } from "react";
 import { createNoise3D } from "simplex-noise";
 import styles from "./Matrix.module.scss";
 
-export type Ripple = { x: number; y: number; radius: number; alpha: number };
+export type Ripple = {
+	x: number;
+	y: number;
+	radius: number;
+	alpha: number;
+	element?: HTMLDivElement;
+};
 
 interface MatrixProps {
 	ripplesRef: React.MutableRefObject<Ripple[]>;
-	color?: string; // New prop for dynamic color
+	color?: string;
 }
 
-// Helper to parse Hex to RGB
 const hexToRgb = (hex: string) => {
 	const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
 	return result
@@ -23,28 +28,33 @@ const hexToRgb = (hex: string) => {
 		: { r: 0, g: 0, b: 0 };
 };
 
-// Helper to Linear Interpolate between values
 const lerp = (start: number, end: number, factor: number) => {
 	return start + (end - start) * factor;
 };
 
 export default function Matrix({ ripplesRef, color = "#000000" }: MatrixProps) {
 	const dotCanvasRef = useRef<HTMLCanvasElement>(null);
+	const overlayRef = useRef<HTMLDivElement>(null);
+	// NEW: Ref for the background vignette
+	const vignetteRef = useRef<HTMLDivElement>(null);
+
 	const noise3D = useRef(createNoise3D()).current;
 
-	// Current color state for lerping (stored in ref to avoid re-renders)
 	const currentColorRef = useRef(hexToRgb(color));
+	const targetColorRef = useRef(hexToRgb(color));
 
-	// --- CONFIGURATION STATE (Tweaking these changes the look) ---
+	useEffect(() => {
+		targetColorRef.current = hexToRgb(color);
+	}, [color]);
 
 	// Grid Density: Distance between dots in pixels.
 	// Lower value (e.g., 4) = dense, heavy performance cost.
 	// Higher value (e.g., 15) = sparse, retro look, fast performance.
-	const [dotsSpacing, setDotsSpacing] = useState(4);
+	const [dotsSpacing, setDotsSpacing] = useState(6);
 
 	// Dot Size limits: The dots grow/shrink based on sparkle noise.
-	const [minSize, setMinSize] = useState(0.75);
-	const [maxSize, setMaxSize] = useState(3);
+	const [minSize, setMinSize] = useState(1);
+	const [maxSize, setMaxSize] = useState(3.5);
 
 	// Shape: 0 = squares, 0.5 = rounded squares, 1 = circles (if size is large enough).
 	// Note: Logic below forces small dots to be circles for performance/look.
@@ -56,7 +66,7 @@ export default function Matrix({ ripplesRef, color = "#000000" }: MatrixProps) {
 	// Thickness: How wide the "ring" of the ripple is.
 	const [rippleThickness, setRippleThickness] = useState(80);
 	// Fade Rate: How fast ripples disappear (0.005 is slow/long-lasting, 0.05 is fast).
-	const [rippleFadeRate, setRippleFadeRate] = useState(0.05);
+	const [rippleFadeRate, setRippleFadeRate] = useState(0.023);
 
 	// Noise "Map" Zoom (Zone):
 	// Controls the size of the "continents" or clusters of dots.
@@ -75,13 +85,30 @@ export default function Matrix({ ripplesRef, color = "#000000" }: MatrixProps) {
 	const [sparkleThreshold, setSparkleThreshold] = useState(0.4);
 
 	// Global Time: Speed of the slow morphing of the entire map structure.
-	const [timeSpeed, setTimeSpeed] = useState(0.0005);
+	const [timeSpeed, setTimeSpeed] = useState(0.00025);
 
 	// Vignette (Edge Reveal) Settings:
 	// Controls how visible the dots are at the edges of the screen without interaction.
 	const [vignetteStart, setVignetteStart] = useState(0.4); // 0 to 1 (Start fading in at 40% distance from center)
 	const [vignettePower, setVignettePower] = useState(3); // Higher = steeper curve (only very edges are visible)
 	const [vignetteStrength, setVignetteStrength] = useState(0.6); // Max opacity of the edges (0 to 1)
+
+	const createRippleElement = (x: number, y: number) => {
+		if (!overlayRef.current) return undefined;
+
+		const el = document.createElement("div");
+
+		el.style.position = "absolute";
+		el.style.left = `${x}px`;
+		el.style.top = `${y}px`;
+		el.style.transform = "translate(-50%, -50%)";
+		el.style.borderRadius = "50%";
+		el.style.pointerEvents = "none";
+		el.style.filter = "blur(12px)";
+
+		overlayRef.current.appendChild(el);
+		return el;
+	};
 
 	useEffect(() => {
 		const canvas = dotCanvasRef.current;
@@ -93,10 +120,9 @@ export default function Matrix({ ripplesRef, color = "#000000" }: MatrixProps) {
 		let w = (canvas.width = window.innerWidth);
 		let h = (canvas.height = window.innerHeight);
 
-		// Center point for vignette calculation
 		let cx = w / 2;
 		let cy = h / 2;
-		let maxDist = Math.hypot(cx, cy); // Max distance from center to corner
+		let maxDist = Math.hypot(cx, cy);
 
 		const handleResize = () => {
 			w = canvas.width = window.innerWidth;
@@ -108,34 +134,61 @@ export default function Matrix({ ripplesRef, color = "#000000" }: MatrixProps) {
 		window.addEventListener("resize", handleResize);
 
 		const render = (time: number) => {
-			ctx.clearRect(0, 0, w, h);
-
-			// --- 1. COLOR LERPING LOGIC ---
-			const targetRgb = hexToRgb(color);
+			const targetRgb = targetColorRef.current;
 			const cur = currentColorRef.current;
-
-			// Lerp factor (0.05 = smooth transition, 1.0 = instant)
 			cur.r = lerp(cur.r, targetRgb.r, 0.05);
 			cur.g = lerp(cur.g, targetRgb.g, 0.05);
 			cur.b = lerp(cur.b, targetRgb.b, 0.05);
 
-			// Apply the interpolated color
-			ctx.fillStyle = `rgb(${Math.round(cur.r)}, ${Math.round(
+			const colorString = `${Math.round(cur.r)}, ${Math.round(
 				cur.g
-			)}, ${Math.round(cur.b)})`;
+			)}, ${Math.round(cur.b)}`;
 
-			// --- 2. RIPPLE PHYSICS ---
+			if (vignetteRef.current) {
+				vignetteRef.current.style.setProperty(
+					"--vignette-color",
+					`rgba(${colorString}, 0.3)`
+				);
+			}
+
+			ctx.clearRect(0, 0, w, h);
+
 			ripplesRef.current.forEach((r) => {
+				if (!r.element) {
+					r.element = createRippleElement(r.x, r.y);
+				}
+
 				r.radius += rippleSpeed;
 				r.alpha -= rippleFadeRate;
+
+				if (r.element) {
+					const lookahead = 15;
+					const visualRadius = r.radius + lookahead;
+					const diameter = visualRadius * 2;
+
+					r.element.style.width = `${diameter}px`;
+					r.element.style.height = `${diameter}px`;
+					r.element.style.opacity = `${r.alpha}`;
+
+					r.element.style.boxShadow = `
+              inset 0 0 60px 10px rgba(${colorString}, 0.3), 
+              0 0 60px 10px rgba(${colorString}, 0.3)
+            `;
+				}
+			});
+
+			ripplesRef.current.forEach((r) => {
+				if (r.alpha <= 0 && r.element) {
+					r.element.remove();
+				}
 			});
 			ripplesRef.current = ripplesRef.current.filter((r) => r.alpha > 0);
 
-			// --- 3. DOT RENDERING LOOP ---
-			// Even if no ripples, we render for the vignette effect
+			// 4. Dots Rendering
+			ctx.fillStyle = `rgb(${colorString})`;
+
 			for (let x = 0; x < w; x += dotsSpacing) {
 				for (let y = 0; y < h; y += dotsSpacing) {
-					// Base noise structure (should a dot exist here?)
 					const structure = noise3D(
 						x * zoneScale,
 						y * zoneScale,
@@ -143,7 +196,6 @@ export default function Matrix({ ripplesRef, color = "#000000" }: MatrixProps) {
 					);
 
 					if (structure > zoneThreshold) {
-						// Sparkle calculation
 						const twinkle = noise3D(
 							x * sparkleScale,
 							y * sparkleScale,
@@ -155,21 +207,17 @@ export default function Matrix({ ripplesRef, color = "#000000" }: MatrixProps) {
 								? (twinkleNorm - sparkleThreshold) / (1 - sparkleThreshold)
 								: 0;
 
-						// --- VIGNETTE CALCULATION ---
 						const distFromCenter = Math.hypot(x - cx, y - cy);
-						const normalizedDist = distFromCenter / maxDist; // 0 (center) to 1 (corner)
+						const normalizedDist = distFromCenter / maxDist;
 
-						// Calculate vignette alpha based on distance
 						let vignetteAlpha = 0;
 						if (normalizedDist > vignetteStart) {
-							// Map range [start, 1] to [0, 1]
 							const vFactor =
 								(normalizedDist - vignetteStart) / (1 - vignetteStart);
 							vignetteAlpha =
 								Math.pow(vFactor, vignettePower) * vignetteStrength;
 						}
 
-						// --- RIPPLE VISIBILITY CALCULATION ---
 						let rippleVisibility = 0;
 						for (const r of ripplesRef.current) {
 							const dist = Math.hypot(x - r.x, y - r.y);
@@ -184,13 +232,11 @@ export default function Matrix({ ripplesRef, color = "#000000" }: MatrixProps) {
 							}
 						}
 
-						// Combine Vignette and Ripple (use the brighter of the two)
 						const finalVisibility = Math.max(vignetteAlpha, rippleVisibility);
 
 						if (finalVisibility > 0.01) {
 							const currentSize = minSize + activation * (maxSize - minSize);
-							const dotBrightness = 0.1 + activation * 0.9;
-							const finalAlpha = dotBrightness * finalVisibility;
+							const finalAlpha = (0.1 + activation * 0.9) * finalVisibility;
 
 							ctx.globalAlpha = finalAlpha;
 							ctx.beginPath();
@@ -219,11 +265,11 @@ export default function Matrix({ ripplesRef, color = "#000000" }: MatrixProps) {
 		return () => {
 			window.removeEventListener("resize", handleResize);
 			cancelAnimationFrame(animationFrameId);
+			ripplesRef.current.forEach((r) => r.element?.remove());
 		};
 	}, [
 		noise3D,
 		ripplesRef,
-		color, // Re-run loop setup if these change, but refs handle the heavy lifting
 		dotsSpacing,
 		zoneScale,
 		zoneThreshold,
@@ -236,16 +282,47 @@ export default function Matrix({ ripplesRef, color = "#000000" }: MatrixProps) {
 		vignetteStrength,
 	]);
 
-	return <canvas ref={dotCanvasRef} className={styles.dotsCanvas} />;
+	return (
+		<>
+			<canvas ref={dotCanvasRef} className={styles.dotsCanvas} />
+
+			<div
+				ref={vignetteRef}
+				style={{
+					position: "absolute",
+					top: 0,
+					left: 0,
+					width: "100%",
+					height: "100%",
+					pointerEvents: "none",
+					zIndex: 1,
+					background:
+						"radial-gradient(circle, transparent 0%, transparent 75%, var(--vignette-color) 100%)",
+				}}
+			/>
+
+			<div
+				ref={overlayRef}
+				style={{
+					position: "absolute",
+					top: 0,
+					left: 0,
+					width: "100%",
+					height: "100%",
+					pointerEvents: "none",
+					overflow: "hidden",
+					zIndex: 2,
+				}}
+			/>
+		</>
+	);
 }
 
-// Helper function remains the same
 export function handleInteraction(
 	e: React.MouseEvent | React.TouchEvent,
 	ripplesRef: React.MutableRefObject<Ripple[]>
 ) {
 	let clientX, clientY;
-
 	if ("touches" in e) {
 		clientX = e.touches[0].clientX;
 		clientY = e.touches[0].clientY;
