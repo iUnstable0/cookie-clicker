@@ -19,6 +19,14 @@ import styles from "./page.module.scss";
 
 const MAX_COOKIES = 5;
 
+const TITLES = [
+	"im cold.",
+	"where are you going?",
+	"its dark.",
+	"dont leave me here.",
+	"come back...",
+];
+
 const levels = [
 	{ target: 0 },
 	{ target: 10 },
@@ -41,6 +49,8 @@ export default function Home() {
 	const [gameStarted, setGameStarted] = useState<boolean>(false);
 	const [gameLoaded, setGameLoaded] = useState<boolean>(false);
 	const [gameOver, setGameOver] = useState<boolean>(false);
+
+	const [isHaunted, setIsHaunted] = useState<boolean>(false);
 
 	const [cookiesClicked, setCookiesClicked] = useState<number>(0);
 	const [lives, setLives] = useState<number>(3);
@@ -75,7 +85,7 @@ export default function Home() {
 	const [playLaugh] = useSound("/sounds/laugh.mp3", {
 		volume: 0.7,
 		interrupt: true,
-		playbackRate: 1,
+		playbackRate: isHaunted ? 0.7 : 1,
 	});
 
 	// const [playLore1, { stop: stopLore1 }] = useSound(
@@ -92,19 +102,75 @@ export default function Home() {
 		gradient.seed = 10;
 		gradient.t = parseInt(time);
 
-		console.log(time);
-
 		gradient.initGradient("#gradient-canvas");
 
-		return () => gradient.disconnect();
-	}, []);
+		const deathState = localStorage.getItem("death");
 
-	useEffect(() => {
+		if (deathState === "true") {
+			setTimeout(() => {
+				document.title = "i am watching you.";
+			}, 1000);
+
+			setIsHaunted(true);
+		}
+
 		const img = new window.Image();
 
 		img.src = "cookie.svg";
 		img.onload = () => {
 			cookieImageRef.current = img;
+		};
+
+		const handleVisibilityChange = () => {
+			if (document.hidden) {
+				const lastHaunt = localStorage.getItem("lastHaunt");
+				const now = Date.now();
+
+				if (
+					!lastHaunt ||
+					now - parseInt(lastHaunt) > 1000 * 60 * 5 /* 5 minutes */
+				) {
+					const randomTitle = TITLES[Math.floor(Math.random() * TITLES.length)];
+
+					// if (Math.random() < 0.1) {
+					document.title = randomTitle;
+
+					localStorage.setItem("lastHaunt", Date.now().toString());
+				}
+			} else {
+				if (isHaunted) {
+					document.title = "i am watching you.";
+				} else {
+					document.title = "Cookie Clicker";
+
+					const tacoDiarrhea = localStorage.getItem("tacoDiarrhea");
+
+					const now = Date.now();
+
+					// set gameover to true then wait for 250 ms then set to false
+					// only do this if tacoDiarrhea is more than 5 mins ago
+
+					if (
+						!tacoDiarrhea ||
+						now - parseInt(tacoDiarrhea) > 1000 * 60 * 5 /* 5 minutes */
+					) {
+						localStorage.setItem("tacoDiarrhea", Date.now().toString());
+
+						setGameOver(true);
+
+						setTimeout(() => {
+							setGameOver(false);
+						}, 250);
+					}
+				}
+			}
+		};
+
+		document.addEventListener("visibilitychange", handleVisibilityChange);
+
+		return () => {
+			gradient.disconnect();
+			document.removeEventListener("visibilitychange", handleVisibilityChange);
 		};
 	}, []);
 
@@ -125,16 +191,18 @@ export default function Home() {
 	}, [cookiesClicked]);
 
 	useEffect(() => {
-		if (lives <= 0) {
+		if (lives <= 0 && !gameOver) {
 			setGameOver(true);
+
+			localStorage.setItem("death", "true");
 
 			stopLofi();
 
 			setTimeout(() => {
 				playLaugh();
-			}, 1500);
+			}, 750);
 		}
-	}, [lives]);
+	}, [lives, gameOver]);
 
 	const spawnCookie = useCallback((width: number, height: number) => {
 		console.log("spawn cookie called");
@@ -184,6 +252,7 @@ export default function Home() {
 				ctx.restore();
 			});
 		}
+
 		requestRef.current = requestAnimationFrame(animateGame);
 	}, []);
 
@@ -231,6 +300,19 @@ export default function Home() {
 		};
 	}, [gameStarted, animateGame, spawnCookie]);
 
+	useEffect(() => {
+		if (!gameStarted || gameOver) return;
+
+		const interval = setInterval(() => {
+			// 1% chance every second to lose a cookie
+			if (Math.random() < 0.05) {
+				setCookiesClicked((prev) => Math.max(0, prev - 1));
+			}
+		}, 1000);
+
+		return () => clearInterval(interval);
+	}, [gameStarted, gameOver]);
+
 	const handleGameClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
 		const canvas = gameCanvasRef.current;
 		if (!canvas) return;
@@ -253,6 +335,7 @@ export default function Home() {
 			if (distance < cookie.size / 2) {
 				activeCookiesRef.current.splice(i, 1);
 				wasHit = true;
+
 				setCookiesClicked((prev) => prev + 1);
 
 				playCookie();
@@ -293,7 +376,7 @@ export default function Home() {
 			onClick={() => {
 				if (!gameLoaded) return;
 
-				if (!cookieEntered) {
+				if (!cookieEntered && !isHaunted) {
 					setCookieEntered(true);
 
 					playLofi();
@@ -302,11 +385,25 @@ export default function Home() {
 						setGameStarted(true);
 					}, 1000);
 				}
+
+				if (!gameOver && isHaunted) {
+					setGameOver(true);
+
+					setTimeout(() => {
+						playLaugh();
+					}, 750);
+
+					localStorage.setItem("death", "false");
+				}
 			}}
 		>
 			{gameOver && (
 				<div className={styles.gameOver}>
+					<div className={styles.overlay} />
 					<Image src="/haunt.jpeg" alt="Haunt" width={512} height={512} />
+					{isHaunted && (
+						<h1 className={styles.gameOverTitle}>i am watching you.</h1>
+					)}
 				</div>
 			)}
 			<canvas

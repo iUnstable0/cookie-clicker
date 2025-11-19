@@ -23,7 +23,21 @@
 	align-items: center;
 	flex-direction: column;
 
+	user-select: none;
+
 	z-index: 20;
+
+	.gameOverTitle {
+		color: rgb(46, 46, 46);
+		font-size: 20px;
+	}
+
+	.overlay {
+		position: absolute;
+		inset: 0;
+
+		background: rgba(0, 0, 0, 0);
+	}
 }
 
 .gradient {
