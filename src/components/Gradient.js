@@ -6,6 +6,18 @@
  *   https://kevinhufnagl.com
  */
 
+const lerp = (start, end, amt) => (1 - amt) * start + amt * end;
+
+// Hex string (#ff0000) to RGB array [1.0, 0.0, 0.0]
+const hexToRgb = (hex) => {
+	let c = hex.substring(1).split("");
+	if (c.length === 3) {
+		c = [c[0], c[0], c[1], c[1], c[2], c[2]];
+	}
+	c = "0x" + c.join("");
+	return [((c >> 16) & 255) / 255, ((c >> 8) & 255) / 255, (255 & c) / 255];
+};
+
 //Converting colors to proper format
 function normalizeColor(hexCode) {
 	return [
@@ -795,6 +807,58 @@ class Gradient {
 	}
 	toggleColor(index) {
 		this.activeColors[index] = 0 === this.activeColors[index] ? 1 : 0;
+	}
+	updateColor(index, hexString, duration = 2000) {
+		let uniformToUpdate;
+
+		// Index 0: Base Background (Standalone Uniform)
+		if (index === 0) {
+			uniformToUpdate = this.mesh.material.uniforms.u_baseColor;
+		}
+		// Index 1+: Wave Layers (Array of Structs)
+		else {
+			const layerIndex = index - 1;
+
+			// Access the Array -> The Specific Item
+			const waveLayer =
+				this.mesh.material.uniforms.u_waveLayers.value[layerIndex];
+
+			// SAFETY CHECK: Ensure the wave layer exists
+			if (waveLayer && waveLayer.value && waveLayer.value.color) {
+				// We must access .value here because waveLayer is a Struct Uniform
+				uniformToUpdate = waveLayer.value.color;
+			}
+		}
+
+		// If we still didn't find it (e.g., user asked for Index 4 but only 3 colors exist)
+		if (!uniformToUpdate) {
+			console.warn(
+				`Gradient: Could not find color uniform for index ${index}. Available layers: ${
+					this.mesh.material.uniforms.u_waveLayers.value.length + 1
+				}`
+			);
+			return;
+		}
+
+		const startColor = [...uniformToUpdate.value];
+		const targetColor = hexToRgb(hexString);
+		const startTime = performance.now();
+
+		const step = (currentTime) => {
+			const elapsed = currentTime - startTime;
+			const progress = Math.min(elapsed / duration, 1);
+			const ease = 1 - Math.pow(1 - progress, 3);
+
+			uniformToUpdate.value[0] = lerp(startColor[0], targetColor[0], ease);
+			uniformToUpdate.value[1] = lerp(startColor[1], targetColor[1], ease);
+			uniformToUpdate.value[2] = lerp(startColor[2], targetColor[2], ease);
+
+			if (progress < 1) {
+				requestAnimationFrame(step);
+			}
+		};
+
+		requestAnimationFrame(step);
 	}
 	showGradientLegend() {
 		this.width > this.minWidth &&

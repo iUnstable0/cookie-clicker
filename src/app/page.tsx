@@ -12,9 +12,21 @@ import { nanoid } from "nanoid";
 import { Gradient } from "@/components/Gradient";
 import Matrix, { handleInteraction, Ripple } from "@/components/Matrix";
 
+import { SlidingNumber } from "@/components/motion-primitives/sliding-number";
+import { TextMorph } from "@/components/motion-primitives/text-morph";
+
 import styles from "./page.module.scss";
 
 const MAX_COOKIES = 5;
+
+const levels = [
+	{ target: 0 },
+	{ target: 10 },
+	{ target: 25 },
+	{ target: 50 },
+	{ target: 100 },
+];
+
 interface GameCookie {
 	id: string;
 	x: number;
@@ -27,9 +39,12 @@ interface GameCookie {
 export default function Home() {
 	const [cookieEntered, setCookieEntered] = useState<boolean>(false);
 	const [gameStarted, setGameStarted] = useState<boolean>(false);
+	const [gameLoaded, setGameLoaded] = useState<boolean>(false);
 
 	const [cookiesClicked, setCookiesClicked] = useState<number>(0);
 	const [lives, setLives] = useState<number>(3);
+
+	const [matrixColor, setMatrixColor] = useState("#000000");
 
 	const gradientRef = useRef<Gradient | null>(null);
 	const cookieImageRef = useRef<HTMLImageElement | null>(null);
@@ -41,10 +56,19 @@ export default function Home() {
 	const [cookieRate, setCookieRate] = React.useState(2);
 
 	const [playCookie] = useSound("/sounds/cookie.mp3", {
-		volume: 0.5,
+		volume: 1,
 		interrupt: true,
 		playbackRate: cookieRate,
 		// loop: true,
+	});
+
+	const [playLofi] = useSound("/sounds/lofi/lofi1.mp3", {
+		volume: 0.5,
+		interrupt: true,
+		loop: true,
+		onload: () => {
+			setGameLoaded(true);
+		},
 	});
 
 	// const [playLore1, { stop: stopLore1 }] = useSound(
@@ -56,11 +80,15 @@ export default function Home() {
 		const gradient = new Gradient();
 		gradientRef.current = gradient;
 
-		const time = Date.now().toString().slice(3, 11);
+		const time = Date.now().toString().slice(5);
 
-		gradient.seed = 24;
+		gradient.seed = 10;
 		gradient.t = parseInt(time);
+
+		console.log(time);
+
 		gradient.initGradient("#gradient-canvas");
+
 		return () => gradient.disconnect();
 	}, []);
 
@@ -72,6 +100,17 @@ export default function Home() {
 			cookieImageRef.current = img;
 		};
 	}, []);
+
+	useEffect(() => {
+		if (!gradientRef.current) return;
+
+		if (cookiesClicked == 20) {
+			gradientRef.current.updateColor(0, "#a7c492", 2000);
+			gradientRef.current.updateColor(1, "#bdde99", 4000);
+			gradientRef.current.updateColor(2, "#92d47e", 6000);
+			gradientRef.current.updateColor(3, "#cbdba2", 8000);
+		}
+	}, [cookiesClicked]);
 
 	const spawnCookie = useCallback((width: number, height: number) => {
 		console.log("spawn cookie called");
@@ -191,7 +230,7 @@ export default function Home() {
 
 				playCookie();
 
-				// spawnCookie(canvas.width, canvas.height);
+				spawnCookie(canvas.width, canvas.height);
 
 				break;
 			}
@@ -221,8 +260,12 @@ export default function Home() {
 				speedGradient();
 			}}
 			onClick={() => {
+				if (!gameLoaded) return;
+
 				if (!cookieEntered) {
 					setCookieEntered(true);
+
+					playLofi();
 
 					setTimeout(() => {
 						setGameStarted(true);
@@ -236,7 +279,12 @@ export default function Home() {
 				data-transition-in
 			/>
 
-			<Matrix ripplesRef={ripplesRef} />
+			<Matrix
+				ripplesRef={ripplesRef}
+				color={matrixColor}
+				// cookiesClicked={cookiesClicked}
+				// levels={levels}
+			/>
 
 			<AnimatePresence mode="wait">
 				{!cookieEntered && (
@@ -249,7 +297,13 @@ export default function Home() {
 						transition={{ type: "spring", stiffness: 100, damping: 20 }}
 					>
 						<h1 className={styles.welcomeTitle}>Welcome to Cookie Clicker</h1>
-						<p className={styles.welcomeMessage}>Press anywhere to enter</p>
+						<div className={styles.welcomeMessage}>
+							<TextMorph>
+								{gameLoaded
+									? "Click anywhere to start!"
+									: "Loading, please wait..."}
+							</TextMorph>
+						</div>
 					</motion.div>
 				)}
 
@@ -294,7 +348,8 @@ export default function Home() {
 						</div>
 
 						<div className={styles.cookies}>
-							<h1>{cookiesClicked}</h1>
+							{/* <h1>{cookiesClicked}</h1> */}
+							<SlidingNumber value={cookiesClicked} />
 							<Image src="/cookie.svg" alt="Cookie" width={128} height={128} />
 						</div>
 

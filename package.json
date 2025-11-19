@@ -9,13 +9,16 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "clsx": "^2.1.1",
     "motion": "^12.23.24",
     "nanoid": "^5.1.6",
     "next": "16.0.3",
     "react": "19.2.0",
     "react-dom": "19.2.0",
+    "react-use-measure": "^2.1.7",
     "sass": "^1.94.0",
     "simplex-noise": "^4.0.3",
+    "tailwind-merge": "^3.4.0",
     "use-sound": "^5.0.0"
   },
   "devDependencies": {
