@@ -4,11 +4,11 @@ Try the live demo!
 
 https://cookie.iunstable0.com
 
+part of a program by Hack Club called Midnight (https://midnight.hackclub.com) where you build on any projects for 50 hours and earn a spot to their in person hackathon in Vienna :D
+
 <img width="3856" height="2606" alt="CleanShot 2025-11-19 at 00 12 10@2x" src="https://github.com/user-attachments/assets/cc51b645-0663-4c24-bb1a-6d36845b5bb1" />
 
-
 ![CleanShot 2025-11-19 at 00 13 47](https://github.com/user-attachments/assets/4388048a-f599-49f6-80ba-a179d42dbdf7)
-
 
 or run locally:
 
