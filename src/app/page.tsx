@@ -369,18 +369,18 @@ export default function Home() {
 		};
 	}, [gameStarted, animateGame, spawnCookie]);
 
-	useEffect(() => {
-		if (!gameStarted || gameOver) return;
+	// useEffect(() => {
+	// 	if (!gameStarted || gameOver) return;
 
-		const interval = setInterval(() => {
-			// 1% chance every second to lose a cookie
-			if (Math.random() < 0.05) {
-				setCookiesClicked((prev) => Math.max(0, prev - 1));
-			}
-		}, 1000);
+	// 	const interval = setInterval(() => {
+	// 		// 1% chance every second to lose a cookie
+	// 		if (Math.random() < 0.05) {
+	// 			setCookiesClicked((prev) => Math.max(0, prev - 1));
+	// 		}
+	// 	}, 1000);
 
-		return () => clearInterval(interval);
-	}, [gameStarted, gameOver]);
+	// 	return () => clearInterval(interval);
+	// }, [gameStarted, gameOver]);
 
 	const handleGameClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
 		const canvas = gameCanvasRef.current;
