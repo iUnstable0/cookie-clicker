@@ -73,6 +73,14 @@ export default function Home() {
 		// loop: true,
 	});
 
+	const [playScaryCookie] = useSound("/sounds/COOKIECLICKED.mp3", {
+		volume: 1,
+		interrupt: true,
+		loop: true,
+		playbackRate: isHaunted ? 0.7 : 1,
+		// loop: true,
+	});
+
 	const [playLofi, { stop: stopLofi }] = useSound("/sounds/lofi/lofi1.mp3", {
 		volume: 0.5,
 		interrupt: true,
@@ -113,9 +121,12 @@ export default function Home() {
 
 		const time = Date.now().toString().slice(5);
 
+		// @ts-expect-error definition missing
 		gradient.seed = 10;
+		// @ts-expect-error definition missing
 		gradient.t = parseInt(time);
 
+		// @ts-expect-error definition missing
 		gradient.initGradient("#gradient-canvas");
 
 		const deathState = localStorage.getItem("death");
@@ -221,7 +232,7 @@ export default function Home() {
 	}, [cookiesClicked]);
 
 	useEffect(() => {
-		let interval;
+		let interval: NodeJS.Timeout | undefined;
 
 		if (lives <= 0 && !gameOver) {
 			setGameOver(true);
@@ -229,6 +240,7 @@ export default function Home() {
 			localStorage.setItem("death", "true");
 
 			stopLofi();
+			// playScaryCookie();
 
 			setTimeout(() => {
 				playLaugh();
@@ -410,9 +422,11 @@ export default function Home() {
 
 	const speedGradient = () => {
 		if (gradientRef.current) {
+			// @ts-expect-error definition missing
 			gradientRef.current.targetSpeed = 15;
 			setTimeout(() => {
 				if (gradientRef.current) {
+					// @ts-expect-error definition missing
 					gradientRef.current.targetSpeed = 0.5;
 				}
 			}, 500);
@@ -446,6 +460,8 @@ export default function Home() {
 				if (!gameOver && isHaunted) {
 					setGameOver(true);
 
+					playScaryCookie();
+
 					setTimeout(() => {
 						playLaugh();
 					}, 750);
@@ -459,7 +475,9 @@ export default function Home() {
 					<div className={styles.overlay} />
 					<Image src="/haunt.jpeg" alt="Haunt" width={512} height={512} />
 					{isHaunted && (
-						<h1 className={styles.gameOverTitle}>i am watching you.</h1>
+						<h1 className={styles.gameOverTitle}>
+							የመረጃ ጥሰት ማሳሰቢያ በአሜሪካ ውስጥ ላሉ ግለሰቦች
+						</h1>
 					)}
 				</div>
 			)}
