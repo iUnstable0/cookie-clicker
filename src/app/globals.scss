@@ -20,15 +20,23 @@ body {
 // 	--gradient-color-4: rgb(17, 23, 32);
 // }
 
+#gradient-canvas {
+	--gradient-color-1: #c3fffc;
+	--gradient-color-2: #52bce9;
+	--gradient-color-3: #e2fff7;
+	--gradient-color-4: #b9e6ff;
+}
+
 // #gradient-canvas {
 // 	--gradient-color-1: #a7c492;
 // 	--gradient-color-2: #bdde99;
 // 	--gradient-color-3: #92d47e;
 // 	--gradient-color-4: #cbdba2;
 // }
-#gradient-canvas {
-	--gradient-color-1: #ffe5c3;
-	--gradient-color-2: #e97552;
-	--gradient-color-3: #faffe2;
-	--gradient-color-4: #ffc9b9;
-}
+
+// #gradient-canvas {
+// 	--gradient-color-1: #ffe5c3;
+// 	--gradient-color-2: #e97552;
+// 	--gradient-color-3: #faffe2;
+// 	--gradient-color-4: #ffc9b9;
+// }

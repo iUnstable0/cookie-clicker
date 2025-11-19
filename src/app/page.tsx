@@ -40,6 +40,7 @@ export default function Home() {
 	const [cookieEntered, setCookieEntered] = useState<boolean>(false);
 	const [gameStarted, setGameStarted] = useState<boolean>(false);
 	const [gameLoaded, setGameLoaded] = useState<boolean>(false);
+	const [gameOver, setGameOver] = useState<boolean>(false);
 
 	const [cookiesClicked, setCookiesClicked] = useState<number>(0);
 	const [lives, setLives] = useState<number>(3);
@@ -62,13 +63,19 @@ export default function Home() {
 		// loop: true,
 	});
 
-	const [playLofi] = useSound("/sounds/lofi/lofi1.mp3", {
+	const [playLofi, { stop: stopLofi }] = useSound("/sounds/lofi/lofi1.mp3", {
 		volume: 0.5,
 		interrupt: true,
 		loop: true,
 		onload: () => {
 			setGameLoaded(true);
 		},
+	});
+
+	const [playLaugh] = useSound("/sounds/laugh.mp3", {
+		volume: 0.7,
+		interrupt: true,
+		playbackRate: 1,
 	});
 
 	// const [playLore1, { stop: stopLore1 }] = useSound(
@@ -109,8 +116,25 @@ export default function Home() {
 			gradientRef.current.updateColor(1, "#bdde99", 4000);
 			gradientRef.current.updateColor(2, "#92d47e", 6000);
 			gradientRef.current.updateColor(3, "#cbdba2", 8000);
+		} else if (cookiesClicked == 67) {
+			gradientRef.current.updateColor(0, "#ffe5c3", 2000);
+			gradientRef.current.updateColor(1, "#e97552", 4000);
+			gradientRef.current.updateColor(2, "#faffe2", 6000);
+			gradientRef.current.updateColor(3, "#ffc9b9", 8000);
 		}
 	}, [cookiesClicked]);
+
+	useEffect(() => {
+		if (lives <= 0) {
+			setGameOver(true);
+
+			stopLofi();
+
+			setTimeout(() => {
+				playLaugh();
+			}, 1500);
+		}
+	}, [lives]);
 
 	const spawnCookie = useCallback((width: number, height: number) => {
 		console.log("spawn cookie called");
@@ -219,6 +243,8 @@ export default function Home() {
 		const mouseX = (e.clientX - rect.left) * scaleX;
 		const mouseY = (e.clientY - rect.top) * scaleY;
 
+		let wasHit = false;
+
 		for (let i = activeCookiesRef.current.length - 1; i >= 0; i--) {
 			const cookie = activeCookiesRef.current[i];
 
@@ -226,6 +252,7 @@ export default function Home() {
 
 			if (distance < cookie.size / 2) {
 				activeCookiesRef.current.splice(i, 1);
+				wasHit = true;
 				setCookiesClicked((prev) => prev + 1);
 
 				playCookie();
@@ -234,6 +261,10 @@ export default function Home() {
 
 				break;
 			}
+		}
+
+		if (!wasHit) {
+			setLives((prev) => Math.max(prev - 1, 0));
 		}
 	};
 
@@ -273,6 +304,11 @@ export default function Home() {
 				}
 			}}
 		>
+			{gameOver && (
+				<div className={styles.gameOver}>
+					<Image src="/haunt.jpeg" alt="Haunt" width={512} height={512} />
+				</div>
+			)}
 			<canvas
 				id="gradient-canvas"
 				className={styles.gradient}
@@ -325,26 +361,52 @@ export default function Home() {
 						}}
 					>
 						<div className={styles.hearts}>
-							{Array.from({ length: lives }).map((_, index) => (
-								<Image
-									key={`life-${index}`}
-									src="/heart.svg"
-									alt="Heart"
-									width={128}
-									height={128}
-									className={styles.heart}
-								/>
-							))}
-							{Array.from({ length: 3 - lives }).map((_, index) => (
-								<Image
-									key={`empty-${index}`}
-									src="/heart-empty.svg"
-									alt="Heart"
-									width={128}
-									height={128}
-									className={styles.heart}
-								/>
-							))}
+							<AnimatePresence mode="popLayout">
+								{Array.from({ length: lives }).map((_, index) => (
+									<motion.div
+										key={`life-${index}`}
+										initial={{ opacity: 0, scale: 0.9, filter: "blur(4px)" }}
+										animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+										exit={{ opacity: 0, scale: 0.9, filter: "blur(4px)" }}
+										transition={{
+											type: "spring",
+											stiffness: 300,
+											damping: 20,
+											opacity: { duration: 0.2 },
+										}}
+										className={styles.heart}
+									>
+										<Image
+											src="/heart.svg"
+											alt="Heart"
+											width={128}
+											height={128}
+										/>
+									</motion.div>
+								))}
+								{Array.from({ length: 3 - lives }).map((_, index) => (
+									<motion.div
+										key={`empty-${lives + index}`}
+										initial={{ opacity: 0, scale: 0.9, filter: "blur(4px)" }}
+										animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+										exit={{ opacity: 0, scale: 0.9, filter: "blur(4px)" }}
+										transition={{
+											type: "spring",
+											stiffness: 300,
+											damping: 20,
+											opacity: { duration: 0.2 },
+										}}
+										className={styles.heart}
+									>
+										<Image
+											src="/heart-empty.svg"
+											alt="Heart"
+											width={128}
+											height={128}
+										/>
+									</motion.div>
+								))}
+							</AnimatePresence>
 						</div>
 
 						<div className={styles.cookies}>
