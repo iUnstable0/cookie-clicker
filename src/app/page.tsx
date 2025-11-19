@@ -369,6 +369,7 @@ export default function Home() {
 		};
 	}, [gameStarted, animateGame, spawnCookie]);
 
+	// TODO: fix bug where the gradient color shift wont follow cookie loss over time
 	// useEffect(() => {
 	// 	if (!gameStarted || gameOver) return;
 
