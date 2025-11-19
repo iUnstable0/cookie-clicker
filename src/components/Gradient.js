@@ -809,6 +809,10 @@ class Gradient {
 		this.activeColors[index] = 0 === this.activeColors[index] ? 1 : 0;
 	}
 	updateColor(index, hexString, duration = 2000) {
+		if (!this.mesh || !this.mesh.material) {
+			return;
+		}
+
 		let uniformToUpdate;
 
 		// Index 0: Base Background (Standalone Uniform)

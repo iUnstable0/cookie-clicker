@@ -28,11 +28,10 @@ const TITLES = [
 ];
 
 const levels = [
-	{ target: 0 },
-	{ target: 10 },
-	{ target: 25 },
-	{ target: 50 },
-	{ target: 100 },
+	{ target: 20 },
+	{ target: 67 },
+	{ target: 111 },
+	{ target: 167 },
 ];
 
 interface GameCookie {
@@ -90,7 +89,11 @@ export default function Home() {
 	});
 
 	const getMatrixColor = (cookiesClicked: number) => {
-		if (cookiesClicked >= 67) {
+		if (cookiesClicked >= 167) {
+			return "#8419bd";
+		} else if (cookiesClicked >= 111) {
+			return "#f95e9a";
+		} else if (cookiesClicked >= 67) {
 			return "#ac6407";
 		} else if (cookiesClicked >= 20) {
 			return "#0f7a21";
@@ -194,16 +197,26 @@ export default function Home() {
 			setMatrixColor(getMatrixColor(cookiesClicked));
 		}
 
-		if (cookiesClicked >= 20 && cookiesClicked < 67) {
-			gradientRef.current.updateColor(0, "#a7c492", 2000);
-			gradientRef.current.updateColor(1, "#bdde99", 4000);
-			gradientRef.current.updateColor(2, "#92d47e", 6000);
-			gradientRef.current.updateColor(3, "#cbdba2", 8000);
+		if (cookiesClicked >= 167) {
+			gradientRef.current.updateColor(0, "#ffc3eb", 2000);
+			gradientRef.current.updateColor(1, "#c594ed", 4000);
+			gradientRef.current.updateColor(2, "#f3e2ff", 6000);
+			gradientRef.current.updateColor(3, "#e6b9ff", 8000);
+		} else if (cookiesClicked >= 111) {
+			gradientRef.current.updateColor(0, "#ffcec3", 2000);
+			gradientRef.current.updateColor(1, "#e95752", 4000);
+			gradientRef.current.updateColor(2, "#ffece2", 6000);
+			gradientRef.current.updateColor(3, "#ffb9b9", 8000);
 		} else if (cookiesClicked >= 67) {
 			gradientRef.current.updateColor(0, "#ffe5c3", 2000);
 			gradientRef.current.updateColor(1, "#e97552", 4000);
 			gradientRef.current.updateColor(2, "#faffe2", 6000);
 			gradientRef.current.updateColor(3, "#ffc9b9", 8000);
+		} else if (cookiesClicked >= 20) {
+			gradientRef.current.updateColor(0, "#a7c492", 2000);
+			gradientRef.current.updateColor(1, "#bdde99", 4000);
+			gradientRef.current.updateColor(2, "#92d47e", 6000);
+			gradientRef.current.updateColor(3, "#cbdba2", 8000);
 		}
 	}, [cookiesClicked]);
 
@@ -459,8 +472,8 @@ export default function Home() {
 			<Matrix
 				ripplesRef={ripplesRef}
 				color={matrixColor}
-				// cookiesClicked={cookiesClicked}
-				// levels={levels}
+				cookiesClicked={cookiesClicked}
+				levels={levels}
 			/>
 
 			<AnimatePresence mode="wait">

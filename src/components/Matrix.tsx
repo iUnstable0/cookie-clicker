@@ -10,11 +10,19 @@ export type Ripple = {
 	radius: number;
 	alpha: number;
 	element?: HTMLDivElement;
+	// Instance-specific physics
+	thickness: number;
+	fadeRate: number;
+	speed: number;
 };
 
 interface MatrixProps {
 	ripplesRef: React.MutableRefObject<Ripple[]>;
 	color?: string;
+	cookiesClicked: number;
+	levels: Array<{
+		target: number;
+	}>;
 }
 
 const hexToRgb = (hex: string) => {
@@ -32,20 +40,19 @@ const lerp = (start: number, end: number, factor: number) => {
 	return start + (end - start) * factor;
 };
 
-export default function Matrix({ ripplesRef, color = "#000000" }: MatrixProps) {
+export default function Matrix({
+	ripplesRef,
+	color = "#000000",
+	cookiesClicked,
+	levels,
+}: MatrixProps) {
 	const dotCanvasRef = useRef<HTMLCanvasElement>(null);
 	const overlayRef = useRef<HTMLDivElement>(null);
-	// NEW: Ref for the background vignette
 	const vignetteRef = useRef<HTMLDivElement>(null);
 
 	const noise3D = useRef(createNoise3D()).current;
-
 	const currentColorRef = useRef(hexToRgb(color));
 	const targetColorRef = useRef(hexToRgb(color));
-
-	useEffect(() => {
-		targetColorRef.current = hexToRgb(color);
-	}, [color]);
 
 	// Grid Density: Distance between dots in pixels.
 	// Lower value (e.g., 4) = dense, heavy performance cost.
@@ -62,11 +69,11 @@ export default function Matrix({ ripplesRef, color = "#000000" }: MatrixProps) {
 
 	// Ripple Physics:
 	// Speed: Pixels the wave travels per frame.
-	const [rippleSpeed, setRippleSpeed] = useState(8);
+	// const [rippleSpeed, setRippleSpeed] = useState(8);
 	// Thickness: How wide the "ring" of the ripple is.
-	const [rippleThickness, setRippleThickness] = useState(80);
+	// const [rippleThickness, setRippleThickness] = useState(80);
 	// Fade Rate: How fast ripples disappear (0.005 is slow/long-lasting, 0.05 is fast).
-	const [rippleFadeRate, setRippleFadeRate] = useState(0.023);
+	// const [rippleFadeRate, setRippleFadeRate] = useState(0.023);
 
 	// Noise "Map" Zoom (Zone):
 	// Controls the size of the "continents" or clusters of dots.
@@ -92,23 +99,22 @@ export default function Matrix({ ripplesRef, color = "#000000" }: MatrixProps) {
 	const [vignetteStart, setVignetteStart] = useState(0.4); // 0 to 1 (Start fading in at 40% distance from center)
 	const [vignettePower, setVignettePower] = useState(3); // Higher = steeper curve (only very edges are visible)
 	const [vignetteStrength, setVignetteStrength] = useState(0.6); // Max opacity of the edges (0 to 1)
+	useEffect(() => {
+		targetColorRef.current = hexToRgb(color);
+	}, [color]);
 
-	const createRippleElement = (x: number, y: number) => {
-		if (!overlayRef.current) return undefined;
+	useEffect(() => {
+		const isLevelUp = levels.some((lvl) => lvl.target === cookiesClicked);
 
-		const el = document.createElement("div");
+		if (isLevelUp && ripplesRef.current.length > 0) {
+			const lastRipple = ripplesRef.current[ripplesRef.current.length - 1];
 
-		el.style.position = "absolute";
-		el.style.left = `${x}px`;
-		el.style.top = `${y}px`;
-		el.style.transform = "translate(-50%, -50%)";
-		el.style.borderRadius = "50%";
-		el.style.pointerEvents = "none";
-		el.style.filter = "blur(12px)";
-
-		overlayRef.current.appendChild(el);
-		return el;
-	};
+			lastRipple.thickness = 300;
+			lastRipple.fadeRate = 0.005;
+			lastRipple.speed = 12;
+			lastRipple.alpha = 1.5;
+		}
+	}, [cookiesClicked, levels, ripplesRef]);
 
 	useEffect(() => {
 		const canvas = dotCanvasRef.current;
@@ -116,10 +122,25 @@ export default function Matrix({ ripplesRef, color = "#000000" }: MatrixProps) {
 		const ctx = canvas.getContext("2d");
 		if (!ctx) return;
 
+		const createRippleElement = (x: number, y: number) => {
+			if (!overlayRef.current) return undefined;
+
+			const el = document.createElement("div");
+			el.style.position = "absolute";
+			el.style.left = `${x}px`;
+			el.style.top = `${y}px`;
+			el.style.transform = "translate(-50%, -50%)";
+			el.style.borderRadius = "50%";
+			el.style.pointerEvents = "none";
+			el.style.filter = "blur(12px)";
+
+			overlayRef.current.appendChild(el);
+			return el;
+		};
+
 		let animationFrameId: number;
 		let w = (canvas.width = window.innerWidth);
 		let h = (canvas.height = window.innerHeight);
-
 		let cx = w / 2;
 		let cy = h / 2;
 		let maxDist = Math.hypot(cx, cy);
@@ -158,21 +179,22 @@ export default function Matrix({ ripplesRef, color = "#000000" }: MatrixProps) {
 					r.element = createRippleElement(r.x, r.y);
 				}
 
-				r.radius += rippleSpeed;
-				r.alpha -= rippleFadeRate;
+				r.radius += r.speed;
+				r.alpha -= r.fadeRate;
 
 				if (r.element) {
-					const lookahead = 15;
-					const visualRadius = r.radius + lookahead;
-					const diameter = visualRadius * 2;
+					const diameter = r.radius * 2;
 
 					r.element.style.width = `${diameter}px`;
 					r.element.style.height = `${diameter}px`;
 					r.element.style.opacity = `${r.alpha}`;
 
+					const blur = r.thickness;
+					const spread = r.thickness * 0.2; // Slight spread to make it visible
+
 					r.element.style.boxShadow = `
-              inset 0 0 60px 10px rgba(${colorString}, 0.3), 
-              0 0 60px 10px rgba(${colorString}, 0.3)
+              inset 0 0 ${blur}px ${spread}px rgba(${colorString}, 0.3), 
+              0 0 ${blur}px ${spread}px rgba(${colorString}, 0.3)
             `;
 				}
 			});
@@ -184,7 +206,6 @@ export default function Matrix({ ripplesRef, color = "#000000" }: MatrixProps) {
 			});
 			ripplesRef.current = ripplesRef.current.filter((r) => r.alpha > 0);
 
-			// 4. Dots Rendering
 			ctx.fillStyle = `rgb(${colorString})`;
 
 			for (let x = 0; x < w; x += dotsSpacing) {
@@ -223,8 +244,8 @@ export default function Matrix({ ripplesRef, color = "#000000" }: MatrixProps) {
 							const dist = Math.hypot(x - r.x, y - r.y);
 							const distFromWave = Math.abs(dist - r.radius);
 
-							if (distFromWave < rippleThickness) {
-								const intensity = 1 - distFromWave / rippleThickness;
+							if (distFromWave < r.thickness) {
+								const intensity = 1 - distFromWave / r.thickness;
 								rippleVisibility = Math.max(
 									rippleVisibility,
 									intensity * r.alpha
@@ -275,8 +296,6 @@ export default function Matrix({ ripplesRef, color = "#000000" }: MatrixProps) {
 		zoneThreshold,
 		sparkleScale,
 		sparkleThreshold,
-		rippleSpeed,
-		rippleFadeRate,
 		vignetteStart,
 		vignettePower,
 		vignetteStrength,
@@ -285,7 +304,6 @@ export default function Matrix({ ripplesRef, color = "#000000" }: MatrixProps) {
 	return (
 		<>
 			<canvas ref={dotCanvasRef} className={styles.dotsCanvas} />
-
 			<div
 				ref={vignetteRef}
 				style={{
@@ -300,7 +318,6 @@ export default function Matrix({ ripplesRef, color = "#000000" }: MatrixProps) {
 						"radial-gradient(circle, transparent 0%, transparent 75%, var(--vignette-color) 100%)",
 				}}
 			/>
-
 			<div
 				ref={overlayRef}
 				style={{
@@ -336,5 +353,9 @@ export function handleInteraction(
 		y: clientY,
 		radius: 0,
 		alpha: 1.0,
+		// SET DEFAULTS HERE
+		thickness: 80,
+		fadeRate: 0.023,
+		speed: 8,
 	});
 }
